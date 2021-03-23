@@ -26,6 +26,8 @@ import org.apache.weex.common.Constants;
 import org.apache.weex.ui.action.BasicComponentData;
 import org.apache.weex.ui.view.WXEditText;
 import org.apache.weex.utils.WXUtils;
+import android.os.Build;
+import android.view.ViewTreeObserver;
 
 /**
  * Created by sospartan on 7/11/16.
@@ -47,22 +49,48 @@ public class Textarea extends AbstractEditComponent {
   }
 
   @Override
-  protected void appleStyleAfterCreated(WXEditText editText) {
-    super.appleStyleAfterCreated(editText);
+  protected void appleStyleAfterCreated(final WXEditText editText) {
     String rowsStr = (String) getStyles().get(Constants.Name.ROWS);
-
-    int rows = DEFAULT_ROWS;
-    try{
-      if(!TextUtils.isEmpty(rowsStr)) {
+    if (!TextUtils.isEmpty(rowsStr)) {
+      int rows = DEFAULT_ROWS;
+      try{
         rows = Integer.parseInt(rowsStr);
+      }catch (NumberFormatException ignored){
       }
-    }catch (NumberFormatException e){
-      //ignore
-      e.printStackTrace();
-    }
+      editText.setLines(rows);
+    } else {
+      final ViewTreeObserver viewTreeObserver = editText.getViewTreeObserver();
+      if (viewTreeObserver.isAlive()) {
+        viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+          @Override
+          public void onGlobalLayout() {
+            int rows = DEFAULT_ROWS;
+            int measureHeight = editText.getMeasuredHeight();
+            int paddingTop = editText.getPaddingTop();
+            int paddingBottom = editText.getPaddingBottom();
+            if (paddingTop < 0) {
+              paddingTop = 0;
+            }
+            if (paddingBottom < 0) {
+              paddingBottom = 0;
+            }
+            measureHeight = measureHeight - paddingTop - paddingBottom;
 
-    editText.setLines(rows);
-    editText.setMinLines(rows);
+            int lineHeight = editText.getLineHeight();
+            int calcRows = (int) (measureHeight / (float) lineHeight);
+            if (calcRows > DEFAULT_ROWS) {
+              rows = calcRows;
+            }
+            editText.setLines(rows);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+              editText.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            } else {
+              editText.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+            }
+          }
+        });
+      }
+    }
   }
 
   @Override
