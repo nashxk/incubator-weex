@@ -50,6 +50,7 @@ public class Textarea extends AbstractEditComponent {
 
   @Override
   protected void appleStyleAfterCreated(final WXEditText editText) {
+    super.appleStyleAfterCreated(editText);
     String rowsStr = (String) getStyles().get(Constants.Name.ROWS);
     if (!TextUtils.isEmpty(rowsStr)) {
       int rows = DEFAULT_ROWS;
